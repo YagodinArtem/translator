@@ -6,6 +6,7 @@ WORKDIR /go/src/translator
 
 COPY ./go.mod ./
 COPY ./go.sum ./
+COPY ./conf.json ./
 
 RUN go mod download
 RUN go mod tidy

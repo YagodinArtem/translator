@@ -4,8 +4,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"os"
+	"strconv"
 )
+
+var ContentTypeHeaderKey = "Content-Type"
+var AppJsonHeaderValue = "application/json"
+
+type Configuration struct {
+	Port int
+}
 
 type translateRequest struct {
 	Text string `json:"text"`
@@ -14,20 +24,22 @@ type translateRequest struct {
 
 func main() {
 
+	config := readConfig("conf.json")
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handler)
 
-	err := http.ListenAndServe(":8987", mux)
+	err := http.ListenAndServe(":"+strconv.Itoa(config.Port), mux)
 	if err != nil {
 		return
 	}
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	headerContentTtype := r.Header.Get("Content-Type")
-	if headerContentTtype != "application/json" {
-		response(w, "Content Type is not application/json", http.StatusUnsupportedMediaType)
+	w.Header().Set(ContentTypeHeaderKey, AppJsonHeaderValue)
+	headerContentType := r.Header.Get(ContentTypeHeaderKey)
+	if headerContentType != AppJsonHeaderValue {
+		response(w, "Content Type is not "+AppJsonHeaderValue, http.StatusUnsupportedMediaType)
 		return
 	}
 	var t translateRequest
@@ -54,11 +66,23 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func response(w http.ResponseWriter, message string, httpStatusCode int) {
-	//w.WriteHeader(httpStatusCode)
+	w.WriteHeader(httpStatusCode)
 	resp := make(map[string]string)
 	if len(message) > 0 {
 		resp["message"] = message
 		jsonResp, _ := json.Marshal(resp)
 		w.Write(jsonResp)
 	}
+}
+
+func readConfig(fileName string) Configuration {
+	file, _ := os.Open(fileName)
+	defer file.Close()
+	decoder := json.NewDecoder(file)
+	configuration := Configuration{}
+	err := decoder.Decode(&configuration)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	return configuration
 }
