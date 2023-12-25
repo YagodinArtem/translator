@@ -38,6 +38,11 @@ func main() {
 func handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set(ContentTypeHeaderKey, AppJsonHeaderValue)
 	headerContentType := r.Header.Get(ContentTypeHeaderKey)
+
+	if r.Method != "POST" {
+		response(w, "Invalid method", 400)
+		return
+	}
 	if headerContentType != AppJsonHeaderValue {
 		response(w, "Content Type is not "+AppJsonHeaderValue, http.StatusUnsupportedMediaType)
 		return
